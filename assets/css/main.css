@@ -1,0 +1,49 @@
+.main {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    background: #f0f0f0;
+}
+
+.main-campos {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 1rem;
+}
+
+.main input {
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 0.25rem;
+}
+
+.main button {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 0.25rem;
+    background-color: #555;
+    color: white;
+    cursor: pointer;
+}
+
+.main button:hover {
+    background-color: aqua;
+    color: black;
+}
+
+.main-file-input {
+    padding: 0.5rem;
+    background-color: #555;
+    color: white;
+}
+
+.main-result-protocol {
+    text-align: center;
+    margin-top: 1rem;
+    padding: 0.5em;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
