@@ -1,0 +1,39 @@
+.section {
+    display: none;
+    flex-direction: column;
+    margin: 0 auto;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    width: 70%;
+    margin-top: 3rem;
+}
+
+.section-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.section-form label {
+    font-weight: bold;
+}
+
+.section-form input, .section-form textarea {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.section-form button {
+    width: fit-content;
+    margin: 0 auto;
+    font-weight: bold;
+    padding: 0.5rem 2rem;
+    background-color: aqua;
+    color: black;
+    border-color: black;
+    border-radius: 3px;
+    cursor: pointer;
+}
