@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Simulação visual do modelo OSI com requisições de rede — HTTP, SMTP, FTP, WebSocket">
     <link rel="stylesheet" href="./assets/css/reset.css">
     <link rel="stylesheet" href="./assets/css/global.css">
     <link rel="stylesheet" href="./assets/css/header.css">
     <link rel="stylesheet" href="./assets/css/main.css">
     <link rel="stylesheet" href="./assets/css/form.css">
+    <link rel="stylesheet" href="./assets/css/osi-layers.css">
     <link href="https://fonts.googleapis.com/css2?family=Stardos+Stencil:wght@400;700&display=swap" rel="stylesheet">
     <title>Redes de Computadores - Modelo OSI</title>
 </head>
@@ -29,9 +31,10 @@
         <form method="post" class="section-form">
         </form>
     </section>
-    <script src="./scripts/script.js"></script>
-    <script type="module" src="./scripts/aplicacao.js"></script>
-    <script type="module" src="./scripts/apresentacao.js"></script>
-    <script type="module" src="./scripts/osi.js"></script>
+
+    <!-- Container das camadas OSI (renderizado via JS) -->
+    <div id="osi-layers-container" class="osi-container"></div>
+
+    <script type="module" src="./scripts/script.js"></script>
 </body>
-</html> 
+</html>

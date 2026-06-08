@@ -1,0 +1,377 @@
+/* =============================================
+   OSI Layers Visualization
+   ============================================= */
+
+/* Container principal das camadas */
+.osi-container {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    width: 80%;
+    max-width: 900px;
+    margin: 2rem auto;
+    gap: 0;
+    padding: 2rem 0;
+}
+
+.osi-container.active {
+    display: flex;
+}
+
+/* ---- Card de cada camada ---- */
+.osi-layer {
+    width: 100%;
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    position: relative;
+    opacity: 0;
+    transform: translateY(-20px);
+    animation: fadeSlideIn 0.6s ease forwards;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+/* Fundo sutil tipo glassmorphism */
+.osi-layer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 12px;
+    z-index: -1;
+    opacity: 0.08;
+    background: linear-gradient(135deg, #fff 0%, transparent 100%);
+}
+
+/* Delays de animação para cada camada */
+.osi-layer.layer-7 {
+    animation-delay: 0s;
+    background: linear-gradient(135deg, rgba(0, 200, 120, 0.15), rgba(0, 200, 120, 0.05));
+    border-left: 4px solid #00c878;
+}
+
+.osi-layer.layer-6 {
+    animation-delay: 0.6s;
+    background: linear-gradient(135deg, rgba(160, 80, 255, 0.15), rgba(160, 80, 255, 0.05));
+    border-left: 4px solid #a050ff;
+}
+
+.osi-layer.layer-5 {
+    animation-delay: 1.2s;
+    background: linear-gradient(135deg, rgba(0, 160, 255, 0.15), rgba(0, 160, 255, 0.05));
+    border-left: 4px solid #00a0ff;
+}
+
+/* ---- Cabeçalho da camada ---- */
+.osi-layer-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.osi-layer-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 0.5rem;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.layer-7 .osi-layer-badge {
+    background: linear-gradient(135deg, #00c878, #00a060);
+    box-shadow: 0 4px 15px rgba(0, 200, 120, 0.4);
+}
+
+.layer-6 .osi-layer-badge {
+    background: linear-gradient(135deg, #a050ff, #7b30d4);
+    box-shadow: 0 4px 15px rgba(160, 80, 255, 0.4);
+}
+
+.layer-5 .osi-layer-badge {
+    background: linear-gradient(135deg, #00a0ff, #0070cc);
+    box-shadow: 0 4px 15px rgba(0, 160, 255, 0.4);
+}
+
+.osi-layer-title {
+    display: flex;
+    flex-direction: column;
+}
+
+.osi-layer-title span:first-child {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #000;
+}
+
+/* ---- Conteúdo da camada ---- */
+.osi-layer-content {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: #000;
+    padding: 1rem 1.25rem;
+    word-break: break-all;
+    overflow-x: auto;
+}
+
+/* Formatação do envelope SMTP (Camada 7) */
+.smtp-line {
+    display: block;
+    padding: 2px 0;
+}
+
+.smtp-line .smtp-command {
+    color: #00e090;
+    font-weight: 700;
+}
+
+/* Formatação JWT colorida (Camada 6) */
+.jwt-display {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.jwt-part {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.jwt-part-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.jwt-part-value {
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    word-break: break-all;
+    line-height: 1.5;
+}
+
+/* Cores padrão jwt.io */
+.jwt-header .jwt-part-label {
+    color: #fb015b;
+}
+
+.jwt-header .jwt-part-value {
+    background: rgba(251, 1, 91, 0.1);
+    border: 1px solid rgba(251, 1, 91, 0.25);
+    color: #ff6b9d;
+}
+
+.jwt-payload .jwt-part-label {
+    color: #d63aff;
+}
+
+.jwt-payload .jwt-part-value {
+    background: rgba(214, 58, 255, 0.1);
+    border: 1px solid rgba(214, 58, 255, 0.25);
+    color: #d88bff;
+}
+
+.jwt-signature .jwt-part-label {
+    color: #00b9f1;
+}
+
+.jwt-signature .jwt-part-value {
+    background: rgba(0, 185, 241, 0.1);
+    border: 1px solid rgba(0, 185, 241, 0.25);
+    color: #66d4f7;
+}
+
+/* Decoded JSON dentro do JWT */
+.jwt-decoded {
+    padding: 0.5rem 0.75rem;
+}
+
+.jwt-decoded pre {
+    white-space: pre-wrap;
+    margin: 0;
+}
+
+/* Formatação da sessão (Camada 5) */
+.session-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem 1rem;
+    align-items: center;
+}
+
+.session-label {
+    font-weight: 700;
+    color: #66bbff;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.session-value {
+    word-break: break-all;
+}
+
+.session-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.session-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00e090;
+}
+
+.session-token-full {
+    word-break: break-all;
+    margin-top: 0.75rem;
+}
+
+.session-token-full .token-label {
+    color: #66bbff;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ---- Seta conector entre camadas ---- */
+.osi-arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0;
+    opacity: 0;
+    animation: fadeIn 0.4s ease forwards;
+}
+
+.osi-arrow:nth-of-type(2) {
+    animation-delay: 0.5s;
+}
+
+.osi-arrow:nth-of-type(4) {
+    animation-delay: 1.1s;
+}
+
+.osi-arrow-line {
+    width: 2px;
+    height: 20px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
+}
+
+.osi-arrow-head {
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid rgba(255, 255, 255, 0.25);
+}
+
+.osi-arrow-label {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+/* ---- Animações ---- */
+@keyframes fadeSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* ---- Responsividade ---- */
+@media (max-width: 768px) {
+    .osi-container {
+        width: 95%;
+        padding: 1rem 0;
+    }
+
+    .osi-layer {
+        padding: 1rem 1.25rem;
+    }
+
+    .osi-layer-content {
+        font-size: 0.78rem;
+        padding: 0.75rem 1rem;
+    }
+
+    .session-grid {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+    }
+
+    .session-label {
+        margin-top: 0.5rem;
+    }
+}
+
+/* ---- Botão de reset ---- */
+.osi-reset-btn {
+    margin-top: 1.5rem;
+    padding: 0.6rem 2rem;
+    background: linear-gradient(135deg, #333, #444);
+    color: #ccc;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.osi-reset-btn:hover {
+    background: linear-gradient(135deg, aqua, #00cccc);
+    color: #111;
+    border-color: aqua;
+    box-shadow: 0 4px 20px rgba(0, 255, 255, 0.3);
+}
