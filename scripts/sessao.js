@@ -3,6 +3,16 @@
 // Gerencia o estabelecimento e controle da sessão
 // =============================================
 
+let lastSessionId = '';
+
+/**
+ * Retorna o último Session ID gerado.
+ * @returns {string}
+ */
+export function getSessionId() {
+    return lastSessionId;
+}
+
 /**
  * Gera os dados da camada de Sessão e retorna o HTML da visualização.
  * @param {string} jwtToken - Token JWT completo gerado pela camada de Apresentação.
@@ -10,11 +20,13 @@
  */
 export function renderSessao(jwtToken) {
     const sessionID = crypto.randomUUID();
+    lastSessionId = sessionID;
+
     const now = new Date();
-    const expiration = new Date(now.getTime() + 60 * 60 * 1000); // +1 hora
+    const expiration = new Date(now.getTime() + 60 * 60 * 1000);
 
     const sessionData = {
-        sessionID: sessionID,
+        sessionID,
         status: 'ESTABLISHED',
         timestamp: now.toISOString(),
         expiration: expiration.toISOString(),

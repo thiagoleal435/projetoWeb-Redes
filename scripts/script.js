@@ -94,18 +94,18 @@ function showLoading(message) {
 }
 
 // Atualiza nome e protocolo ao digitar
-input.addEventListener('input', function() {
+input.addEventListener('input', function () {
     const value = input.value.trim();
     user.innerHTML = `usuário : ${value !== '' ? value : USER_NAME}`;
     protocol.textContent = getProtocol(value);
 });
 
 // Leitura de arquivo para detectar protocolo pelo conteúdo
-fileInput.addEventListener('change', function() {
+fileInput.addEventListener('change', function () {
     const file = fileInput.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
             const content = e.target.result;
             protocol.textContent = getProtocol(content);
         };
@@ -114,7 +114,7 @@ fileInput.addEventListener('change', function() {
 });
 
 // Botão de requisição
-button.addEventListener('click', async function() {
+button.addEventListener('click', async function () {
     const req = input.value.trim();
     const detectedProtocol = getProtocol(req);
 
@@ -191,7 +191,7 @@ button.addEventListener('click', async function() {
 });
 
 // Submit handler do formulário da seção (SMTP)
-sectionForm.addEventListener('submit', function(e) {
+sectionForm.addEventListener('submit', function (e) {
     e.preventDefault();
     const fd = new FormData(sectionForm);
     email.remetente = fd.get('remetente') || '';
