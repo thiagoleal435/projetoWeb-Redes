@@ -68,104 +68,23 @@ async function resolveDNS(domain) {
 }
 
 /**
- * Renderiza o resultado da resolução DNS no container OSI.
- */
-function renderDNSResult(domain, dnsData) {
-    const container = document.getElementById('osi-layers-container');
-    if (!container) return;
-
-    const hasAnswer = dnsData.Answer && dnsData.Answer.length > 0;
-    const ip = hasAnswer ? dnsData.Answer[0].data : null;
-    const ttl = hasAnswer ? dnsData.Answer[0].TTL : null;
-    const statusCode = dnsData.Status;
-    const statusText = statusCode === 0 ? 'NOERROR' : `ERRO (código ${statusCode})`;
-
-    // Renderizar todas as respostas DNS (pode haver múltiplos IPs)
-    let answersHTML = '';
-    if (hasAnswer) {
-        answersHTML = dnsData.Answer.map((ans, i) => `
-            <span class="smtp-line">
-                <span class="smtp-command">Registro ${i + 1}:</span>
-                <span class="smtp-value"> ${ans.data} (TTL: ${ans.TTL}s, Tipo: ${ans.type === 1 ? 'A' : ans.type})</span>
-            </span>
-        `).join('');
-    } else {
-        answersHTML = `
-            <span class="smtp-line">
-                <span class="smtp-command" style="color: #ff6b6b;">Nenhum registro encontrado para este domínio.</span>
-            </span>
-        `;
-    }
-
-    container.innerHTML = `
-        <div class="osi-layer layer-7">
-            <div class="osi-layer-header">
-                <div class="osi-layer-badge">DNS</div>
-                <div class="osi-layer-title">
-                    <span>Resolução DNS</span>
-                    <span>Tradução de domínio para endereço IP via Google DNS (8.8.8.8)</span>
-                </div>
-            </div>
-            <div class="osi-layer-content">
-                <span class="smtp-line">
-                    <span class="smtp-command">Domínio:</span>
-                    <span class="smtp-value"> ${domain}</span>
-                </span>
-                <span class="smtp-line">
-                    <span class="smtp-command">Servidor DNS:</span>
-                    <span class="smtp-value"> dns.google (8.8.8.8)</span>
-                </span>
-                <span class="smtp-line">
-                    <span class="smtp-command">Tipo de consulta:</span>
-                    <span class="smtp-value"> A (IPv4)</span>
-                </span>
-                <span class="smtp-line">
-                    <span class="smtp-command">Status:</span>
-                    <span class="smtp-value"> ${statusText}</span>
-                </span>
-                <span class="smtp-line" style="margin-top: 0.5rem; border-top: 1px dashed rgba(0,0,0,0.15); padding-top: 0.5rem;">
-                    <span class="smtp-command">Respostas:</span>
-                </span>
-                ${answersHTML}
-                ${ip ? `
-                <span class="smtp-line" style="margin-top: 0.75rem; border-top: 1px dashed rgba(0,0,0,0.15); padding-top: 0.75rem;">
-                    <span class="smtp-command" style="font-size: 1.1em;">IP Resolvido →</span>
-                    <span class="smtp-value" style="font-size: 1.1em; font-weight: 700;"> ${ip}</span>
-                </span>
-                ` : ''}
-            </div>
-        </div>
-        <button class="osi-reset-btn" id="osi-reset-btn">Nova Requisição</button>
-    `;
-
-    container.classList.add('active');
-
-    document.getElementById('osi-reset-btn').addEventListener('click', () => {
-        container.classList.remove('active');
-        container.innerHTML = '';
-    });
-}
-
-/**
  * Mostra estado de carregamento no container OSI.
  */
-function renderDNSLoading(domain) {
+function showLoading(message) {
     const container = document.getElementById('osi-layers-container');
     if (!container) return;
 
     container.innerHTML = `
         <div class="osi-layer layer-7" style="animation-delay: 0s;">
             <div class="osi-layer-header">
-                <div class="osi-layer-badge">DNS</div>
+                <div class="osi-layer-badge">7</div>
                 <div class="osi-layer-title">
-                    <span>Resolução DNS</span>
-                    <span>Consultando dns.google para ${domain}...</span>
+                    <span>Camada de Aplicação</span>
                 </div>
             </div>
             <div class="osi-layer-content">
                 <span class="smtp-line">
-                    <span class="smtp-command">Resolvendo</span>
-                    <span class="smtp-value"> ${domain}...</span>
+                    <span class="smtp-command">${message}</span>
                 </span>
             </div>
         </div>
@@ -234,39 +153,36 @@ button.addEventListener('click', async function() {
         const hostname = extractHostname(req);
         if (!hostname) return;
 
-        // Mostrar loading
-        renderDNSLoading(hostname);
+        // Mostrar loading enquanto resolve DNS
+        showLoading(`Resolvendo DNS para ${hostname}...`);
 
         try {
             const dnsData = await resolveDNS(hostname);
-            renderDNSResult(hostname, dnsData);
+            const hasAnswer = dnsData.Answer && dnsData.Answer.length > 0;
+            const ip = hasAnswer ? dnsData.Answer[0].data : 'Não resolvido';
+
+            // Montar objeto HTTP para as camadas OSI
+            const httpData = {
+                dominio: hostname,
+                metodo: 'GET',
+                hostIP: ip,
+                protocolo: detectedProtocol,
+                usuario: USER_NAME
+            };
+
+            // Renderizar as 3 camadas OSI com os dados HTTP
+            renderOSILayers(httpData, 'http');
         } catch (err) {
-            const container = document.getElementById('osi-layers-container');
-            if (container) {
-                container.innerHTML = `
-                    <div class="osi-layer layer-7">
-                        <div class="osi-layer-header">
-                            <div class="osi-layer-badge">DNS</div>
-                            <div class="osi-layer-title">
-                                <span>Resolução DNS</span>
-                                <span>Erro na consulta</span>
-                            </div>
-                        </div>
-                        <div class="osi-layer-content">
-                            <span class="smtp-line">
-                                <span class="smtp-command" style="color: #ff6b6b;">Erro:</span>
-                                <span class="smtp-value"> Não foi possível resolver ${hostname}. Verifique a URL e tente novamente.</span>
-                            </span>
-                        </div>
-                    </div>
-                    <button class="osi-reset-btn" id="osi-reset-btn">Nova Requisição</button>
-                `;
-                container.classList.add('active');
-                document.getElementById('osi-reset-btn').addEventListener('click', () => {
-                    container.classList.remove('active');
-                    container.innerHTML = '';
-                });
-            }
+            // Em caso de erro de rede, montar com IP desconhecido
+            const httpData = {
+                dominio: hostname,
+                metodo: 'GET',
+                hostIP: 'Erro na resolução DNS',
+                protocolo: detectedProtocol,
+                usuario: USER_NAME
+            };
+
+            renderOSILayers(httpData, 'http');
         }
     } else {
         section.style.display = 'none';
@@ -274,7 +190,7 @@ button.addEventListener('click', async function() {
     }
 });
 
-// Submit handler do formulário da seção
+// Submit handler do formulário da seção (SMTP)
 sectionForm.addEventListener('submit', function(e) {
     e.preventDefault();
     const fd = new FormData(sectionForm);
@@ -290,5 +206,6 @@ sectionForm.addEventListener('submit', function(e) {
     sectionForm.innerHTML = '';
 
     // Renderizar as camadas OSI com os dados capturados
-    renderOSILayers(email);
+    renderOSILayers(email, 'smtp');
 });
+

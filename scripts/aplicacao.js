@@ -1,12 +1,11 @@
 // =============================================
 // Camada 7 — Aplicação
-// Dados "puros" do usuário formatados como envelope SMTP
+// Dados "puros" do usuário (SMTP ou HTTP)
 // =============================================
 
 /**
- * Renderiza a camada de Aplicação com os dados do formulário
- * formatados como comandos de um envelope SMTP.
- * @param {Object} emailData - Dados do formulário (remetente, destinatario, assunto, corpo, protocolo, timestamp).
+ * Renderiza a camada de Aplicação para requisição SMTP.
+ * @param {Object} emailData - Dados do formulário SMTP.
  * @returns {string} HTML da camada de Aplicação.
  */
 export function renderAplicacao(emailData) {
@@ -45,6 +44,47 @@ export function renderAplicacao(emailData) {
                 </span>
                 <span class="smtp-line">
                     <span class="smtp-value">${emailData.corpo}</span>
+                </span>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Renderiza a camada de Aplicação para requisição HTTP.
+ * @param {Object} httpData - Dados da requisição HTTP (dominio, metodo, hostIP, protocolo, usuario).
+ * @returns {string} HTML da camada de Aplicação.
+ */
+export function renderAplicacaoHTTP(httpData) {
+    return `
+        <div class="osi-layer layer-7">
+            <div class="osi-layer-header">
+                <div class="osi-layer-badge">7</div>
+                <div class="osi-layer-title">
+                    <span>Camada de Aplicação</span>
+                    <span>Dados da requisição — HTTP</span>
+                </div>
+            </div>
+            <div class="osi-layer-content">
+                <span class="smtp-line">
+                    <span class="smtp-command">Domínio:</span>
+                    <span class="smtp-value"> ${httpData.dominio}</span>
+                </span>
+                <span class="smtp-line">
+                    <span class="smtp-command">Método:</span>
+                    <span class="smtp-value"> ${httpData.metodo}</span>
+                </span>
+                <span class="smtp-line">
+                    <span class="smtp-command">Host IP:</span>
+                    <span class="smtp-value"> ${httpData.hostIP}</span>
+                </span>
+                <span class="smtp-line">
+                    <span class="smtp-command">Protocolo:</span>
+                    <span class="smtp-value"> ${httpData.protocolo}</span>
+                </span>
+                <span class="smtp-line">
+                    <span class="smtp-command">Usuário:</span>
+                    <span class="smtp-value"> ${httpData.usuario}</span>
                 </span>
             </div>
         </div>

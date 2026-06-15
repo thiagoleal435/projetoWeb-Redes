@@ -3,24 +3,34 @@
 // Coordena a renderização sequencial das camadas 7 → 6 → 5
 // =============================================
 
-import { renderAplicacao } from './aplicacao.js';
+import { renderAplicacao, renderAplicacaoHTTP } from './aplicacao.js';
 import { renderApresentacao } from './apresentacao.js';
 import { renderSessao } from './sessao.js';
 
 /**
  * Renderiza as 3 camadas OSI no container, com setas de conexão.
  * A animação sequencial é controlada via CSS animation-delay.
- * @param {Object} emailData - Dados do formulário SMTP.
+ * @param {Object} data - Dados da requisição (SMTP ou HTTP).
+ * @param {'smtp'|'http'} tipo - Tipo de requisição para definir o render da camada de aplicação.
  */
-export function renderOSILayers(emailData) {
+export function renderOSILayers(data, tipo = 'smtp') {
     const container = document.getElementById('osi-layers-container');
     if (!container) return;
 
-    // Camada 7 — Aplicação
-    const aplicacaoHTML = renderAplicacao(emailData);
+    // Camada 7 — Aplicação (varia conforme o tipo)
+    let aplicacaoHTML;
+    let payloadLabel;
+
+    if (tipo === 'http') {
+        aplicacaoHTML = renderAplicacaoHTTP(data);
+        payloadLabel = 'Dados da requisição HTTP';
+    } else {
+        aplicacaoHTML = renderAplicacao(data);
+        payloadLabel = 'Dados do e-mail';
+    }
 
     // Camada 6 — Apresentação (retorna HTML + token JWT)
-    const { html: apresentacaoHTML, token: jwtToken } = renderApresentacao(emailData);
+    const { html: apresentacaoHTML, token: jwtToken } = renderApresentacao(data, payloadLabel);
 
     // Camada 5 — Sessão (recebe o token JWT)
     const sessaoHTML = renderSessao(jwtToken);

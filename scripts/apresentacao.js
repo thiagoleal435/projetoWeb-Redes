@@ -39,24 +39,22 @@ function simulateHmacSignature(input, secret) {
 }
 
 /**
- * Gera um JWT simplificado a partir dos dados do e-mail.
- * @param {Object} emailData - Dados do formulário.
+ * Gera um JWT simplificado a partir de um objeto de dados genérico.
+ * @param {Object} data - Dados a serializar no payload (SMTP ou HTTP).
  * @returns {Object} { token, headerObj, payloadObj, headerB64, payloadB64, signature }
  */
-function generateJWT(emailData) {
+function generateJWT(data) {
     const headerObj = {
         alg: "HS256",
         typ: "JWT"
     };
 
+    // O payload é o próprio objeto de dados + iat/exp
+    const now = Math.floor(Date.now() / 1000);
     const payloadObj = {
-        sub: emailData.remetente,
-        to: emailData.destinatario,
-        subject: emailData.assunto,
-        body: emailData.corpo,
-        protocol: emailData.protocolo,
-        iat: Math.floor(new Date(emailData.timestamp).getTime() / 1000),
-        exp: Math.floor(new Date(emailData.timestamp).getTime() / 1000) + 3600
+        ...data,
+        iat: now,
+        exp: now + 3600
     };
 
     const headerB64 = base64UrlEncode(JSON.stringify(headerObj));
@@ -73,11 +71,12 @@ function generateJWT(emailData) {
 
 /**
  * Renderiza a camada de Apresentação com o JWT decomposto.
- * @param {Object} emailData - Dados do formulário.
+ * @param {Object} data - Dados a codificar (SMTP ou HTTP).
+ * @param {string} [payloadLabel='Dados'] - Rótulo para a seção de payload.
  * @returns {{ html: string, token: string }} HTML da camada + token JWT completo.
  */
-export function renderApresentacao(emailData) {
-    const jwt = generateJWT(emailData);
+export function renderApresentacao(data, payloadLabel = 'Dados') {
+    const jwt = generateJWT(data);
 
     const html = `
         <div class="osi-layer layer-6">
@@ -98,7 +97,7 @@ export function renderApresentacao(emailData) {
                         </div>
                     </div>
                     <div class="jwt-part jwt-payload">
-                        <span class="jwt-part-label">Dados do e-mail</span>
+                        <span class="jwt-part-label">${payloadLabel}</span>
                         <div class="jwt-part-value">${jwt.payloadB64}</div>
                         <div class="jwt-decoded">
                             <pre>${JSON.stringify(jwt.payloadObj, null, 2)}</pre>
