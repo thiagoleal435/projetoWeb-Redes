@@ -42,9 +42,8 @@ export function renderOSILayers(data, tipo = 'smtp') {
     const appProtocol = data.protocolo || 'HTTP/HTTPS';
     const { html: transporteHTML } = renderTransporte(sessionId, appProtocol);
 
-    // Camada 3 — Rede
-    const hostIP = data.hostIP || '';
-    const { html: redeHTML, networkPacket } = renderRede(hostIP);
+    // Camada 3 — Rede (sorteia origem/destino automaticamente)
+    const { html: redeHTML, networkPacket } = renderRede();
 
     // Seta visual entre camadas
     const arrowHTML = `

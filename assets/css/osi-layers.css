@@ -514,6 +514,12 @@
 .net-info-label { font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #ff7070; }
 .net-info-value { font-family: 'Courier New', monospace; }
 
+.net-no-route {
+    text-align: center; padding: 1rem; margin-bottom: 1rem;
+    background: rgba(255,70,70,0.1); border: 1px solid rgba(255,70,70,0.3);
+    border-radius: 8px; color: #ff6b6b; font-weight: 700;
+}
+
 .network-canvas-container {
     margin-bottom: 1.25rem; padding: 1rem;
     background: rgba(10,15,30,0.7);

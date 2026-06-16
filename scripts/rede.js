@@ -1,49 +1,94 @@
 // =============================================
 // Camada 3 — Rede
 // Roteamento com Busca Gulosa + Canvas animado
+// Utiliza os 100 roteadores de points.js
 // =============================================
 
-// ── Grafo de roteadores ──
-const GRAPH = {
-    'client':    { ip: '192.168.1.10', label: 'Cliente',     x: 0, y: 2, type: 'client',  neighbors: ['router-gw'] },
-    'router-gw': { ip: '192.168.1.1',  label: 'Gateway',     x: 1, y: 2, type: 'router',  neighbors: ['client', 'router-a', 'router-b'] },
-    'router-a':  { ip: '10.0.1.1',     label: 'Roteador A',  x: 2, y: 1, type: 'router',  neighbors: ['router-gw', 'router-c', 'router-d'] },
-    'router-b':  { ip: '10.0.2.1',     label: 'Roteador B',  x: 2, y: 3, type: 'router',  neighbors: ['router-gw', 'router-d', 'router-e'] },
-    'router-c':  { ip: '10.0.3.1',     label: 'Roteador C',  x: 3, y: 0, type: 'router',  neighbors: ['router-a', 'router-f'] },
-    'router-d':  { ip: '10.0.4.1',     label: 'Roteador D',  x: 3, y: 2, type: 'router',  neighbors: ['router-a', 'router-b', 'router-f', 'router-g'] },
-    'router-e':  { ip: '10.0.5.1',     label: 'Roteador E',  x: 3, y: 4, type: 'router',  neighbors: ['router-b', 'router-g'] },
-    'router-f':  { ip: '10.0.6.1',     label: 'Roteador F',  x: 4, y: 1, type: 'router',  neighbors: ['router-c', 'router-d', 'server'] },
-    'router-g':  { ip: '10.0.7.1',     label: 'Roteador G',  x: 4, y: 3, type: 'router',  neighbors: ['router-d', 'router-e', 'server'] },
-    'server':    { ip: '0.0.0.0',      label: 'Servidor',    x: 5, y: 2, type: 'server',   neighbors: ['router-f', 'router-g'] }
-};
+import { points } from './points.js';
 
-// ── Busca Gulosa ──
-function heuristic(a, b) {
-    const na = GRAPH[a], nb = GRAPH[b];
-    return Math.sqrt((na.x - nb.x) ** 2 + (na.y - nb.y) ** 2);
+// ── Construir grafo a partir do points.js ──
+const GRAPH = {};
+for (const p of points) {
+    GRAPH[p.id] = {
+        ip: p.ip,
+        label: p.nome,
+        x: p.x,
+        y: p.y,
+        ativo: p.ativo,
+        conexoes: p.conexoes
+    };
 }
 
+// ── Busca Gulosa ──
+function heuristic(aId, bId) {
+    const a = GRAPH[aId], b = GRAPH[bId];
+    return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+}
+
+/**
+ * Busca Gulosa (Greedy Best-First Search).
+ * Ignora roteadores inativos durante a travessia.
+ * @param {string} startId
+ * @param {string} goalId
+ * @returns {string[]} IDs dos nós na rota, ou [] se não encontrar
+ */
 function greedySearch(startId, goalId) {
     const visited = new Set();
     const path = [];
     let cur = startId;
+
     while (cur !== goalId) {
         visited.add(cur);
         path.push(cur);
-        const nb = GRAPH[cur].neighbors.filter(n => !visited.has(n));
-        if (!nb.length) break;
-        cur = nb.reduce((best, n) => heuristic(n, goalId) < heuristic(best, goalId) ? n : best);
+
+        // Filtrar vizinhos: não visitados E ativos (ou o próprio destino)
+        const neighbors = GRAPH[cur].conexoes.filter(
+            n => !visited.has(n) && (GRAPH[n].ativo || n === goalId)
+        );
+
+        if (!neighbors.length) return []; // Sem caminho possível
+        cur = neighbors.reduce((best, n) =>
+            heuristic(n, goalId) < heuristic(best, goalId) ? n : best
+        );
     }
-    if (cur === goalId) path.push(goalId);
+
+    path.push(goalId);
     return path;
 }
 
+// ── Sortear origem e destino ──
+function sortearOrigemDestino() {
+    const ativos = points.filter(p => p.ativo);
+    const idxOrigem = Math.floor(Math.random() * ativos.length);
+    let idxDestino;
+    do {
+        idxDestino = Math.floor(Math.random() * ativos.length);
+    } while (idxDestino === idxOrigem);
+    return { origem: ativos[idxOrigem], destino: ativos[idxDestino] };
+}
+
 // ── Pacote de rede ──
-function buildNetworkPacket(hostIP) {
-    GRAPH['server'].ip = hostIP || '200.160.2.3';
-    const routeIds = greedySearch('client', 'server');
-    const rota = routeIds.map(id => ({ id, ip: GRAPH[id].ip, label: GRAPH[id].label, x: GRAPH[id].x, y: GRAPH[id].y, type: GRAPH[id].type }));
-    return { ipOrigem: GRAPH['client'].ip, ipDestino: GRAPH['server'].ip, rota, ttl: 64 };
+function buildNetworkPacket() {
+    const { origem, destino } = sortearOrigemDestino();
+    const routeIds = greedySearch(origem.id, destino.id);
+
+    const rota = routeIds.map(id => ({
+        id,
+        ip: GRAPH[id].ip,
+        label: GRAPH[id].label,
+        x: GRAPH[id].x,
+        y: GRAPH[id].y
+    }));
+
+    return {
+        ipOrigem: origem.ip,
+        ipDestino: destino.ip,
+        origemId: origem.id,
+        destinoId: destino.id,
+        rota,
+        ttl: 64,
+        rotaEncontrada: routeIds.length > 0
+    };
 }
 
 // ── Animação ──
@@ -70,39 +115,7 @@ function roundRect(ctx, x, y, w, h, r) {
     ctx.closePath();
 }
 
-// ── Ícones ──
-function drawClientIcon(ctx, cx, cy, s, color) {
-    ctx.save();
-    ctx.shadowColor = color; ctx.shadowBlur = 12;
-    // Monitor
-    const mw = s * 1.4, mh = s * 0.95;
-    const mx = cx - mw / 2, my = cy - mh / 2 - s * 0.12;
-    roundRect(ctx, mx, my, mw, mh, 3);
-    ctx.fillStyle = 'rgba(10,20,35,0.9)'; ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
-    // Tela
-    ctx.fillStyle = color; ctx.globalAlpha = 0.2;
-    ctx.fillRect(mx + 3, my + 3, mw - 6, mh - 6);
-    ctx.globalAlpha = 1;
-    // Texto na tela
-    ctx.fillStyle = color; ctx.font = `${s * 0.35}px Courier New`; ctx.textAlign = 'center';
-    ctx.fillText('> _', cx, cy - s * 0.05);
-    // Base
-    ctx.beginPath();
-    ctx.moveTo(cx - s * 0.3, my + mh);
-    ctx.lineTo(cx + s * 0.3, my + mh);
-    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx, my + mh);
-    ctx.lineTo(cx, my + mh + s * 0.18);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx - s * 0.35, my + mh + s * 0.18);
-    ctx.lineTo(cx + s * 0.35, my + mh + s * 0.18);
-    ctx.stroke();
-    ctx.restore();
-}
-
+// ── Ícone do roteador ──
 function drawRouterIcon(ctx, cx, cy, s, color, blocked) {
     ctx.save();
     ctx.shadowColor = color; ctx.shadowBlur = blocked ? 0 : 10;
@@ -138,7 +151,7 @@ function drawRouterIcon(ctx, cx, cy, s, color, blocked) {
         ctx.beginPath(); ctx.arc(ax, ay, 3, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill();
     }
     ctx.globalAlpha = 1;
-    // X vermelho se bloqueado
+    // X vermelho se bloqueado (inativo)
     if (blocked) {
         ctx.shadowBlur = 0;
         ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 3; ctx.globalAlpha = 0.85;
@@ -150,32 +163,7 @@ function drawRouterIcon(ctx, cx, cy, s, color, blocked) {
     ctx.restore();
 }
 
-function drawServerIcon(ctx, cx, cy, s, color) {
-    ctx.save();
-    ctx.shadowColor = color; ctx.shadowBlur = 12;
-    const rw = s * 1.1, rh = s * 1.4;
-    const rx = cx - rw / 2, ry = cy - rh / 2;
-    roundRect(ctx, rx, ry, rw, rh, 4);
-    ctx.fillStyle = 'rgba(10,20,35,0.9)'; ctx.fill();
-    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
-    // Slots
-    for (let i = 0; i < 3; i++) {
-        const sy2 = ry + rh * 0.15 + i * rh * 0.28;
-        ctx.fillStyle = 'rgba(255,255,255,0.06)';
-        ctx.fillRect(rx + 4, sy2, rw - 8, rh * 0.2);
-        ctx.strokeStyle = color; ctx.globalAlpha = 0.3; ctx.lineWidth = 1;
-        ctx.strokeRect(rx + 4, sy2, rw - 8, rh * 0.2);
-        ctx.globalAlpha = 1;
-        // LED
-        ctx.beginPath();
-        ctx.arc(rx + rw - 10, sy2 + rh * 0.1, 2.5, 0, Math.PI * 2);
-        ctx.fillStyle = i === 0 ? '#00e090' : color;
-        ctx.fill();
-    }
-    ctx.restore();
-}
-
-// ── Desenho de label ──
+// ── Desenho de label (apenas para nós da rota) ──
 function drawLabel(ctx, cx, cy, nodeSize, label, ip, color) {
     const ly = cy + nodeSize * 0.85;
     ctx.font = `bold 10px 'Courier New', monospace`;
@@ -188,7 +176,6 @@ function drawLabel(ctx, cx, cy, nodeSize, label, ip, color) {
 
 // ── Desenho do pacote ──
 function drawPacket(ctx, x, y, trail, time) {
-    // Trail
     for (let i = 0; i < trail.length; i++) {
         const t = trail[i];
         const alpha = (i / trail.length) * 0.5;
@@ -197,13 +184,11 @@ function drawPacket(ctx, x, y, trail, time) {
         ctx.fillStyle = `rgba(255,221,0,${alpha})`;
         ctx.fill();
     }
-    // Glow
     ctx.save();
     ctx.shadowColor = 'rgba(255,221,0,0.8)'; ctx.shadowBlur = 20;
     ctx.beginPath(); ctx.arc(x, y, 7 + Math.sin(time * 6) * 2, 0, Math.PI * 2);
     ctx.fillStyle = '#ffdd00'; ctx.fill();
     ctx.restore();
-    // Inner
     ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2);
     ctx.fillStyle = '#fff'; ctx.fill();
 }
@@ -224,14 +209,47 @@ export function initRedeCanvas(packet) {
     const canvas = document.getElementById('network-canvas');
     if (!canvas) return;
 
+    // Se rota não foi encontrada, mostrar mensagem
+    if (!packet.rotaEncontrada) {
+        const ctx2 = canvas.getContext('2d');
+        canvas.width = 850; canvas.height = 200;
+        canvas.style.width = '850px'; canvas.style.height = '200px';
+        ctx2.fillStyle = 'rgba(5,10,25,0.8)';
+        ctx2.fillRect(0, 0, 850, 200);
+        ctx2.font = 'bold 16px Courier New'; ctx2.textAlign = 'center';
+        ctx2.fillStyle = '#ff6b6b';
+        ctx2.fillText('⚠ Rota não encontrada entre os roteadores sorteados', 425, 100);
+        return;
+    }
+
     const dpr = window.devicePixelRatio || 1;
-    const cw = 850, ch = 420;
+
+    // Dimensões proporcionais ao range dos dados (26-955 x, 20-680 y)
+    const PAD = 50;
+    const cw = 1000, ch = 700;
     canvas.width = cw * dpr;
     canvas.height = ch * dpr;
     canvas.style.width = cw + 'px';
     canvas.style.height = ch + 'px';
     const ctx = canvas.getContext('2d');
     ctx.scale(dpr, dpr);
+
+    // Calcular range real das coordenadas
+    const allX = points.map(p => p.x);
+    const allY = points.map(p => p.y);
+    const minX = Math.min(...allX), maxX = Math.max(...allX);
+    const minY = Math.min(...allY), maxY = Math.max(...allY);
+    const rangeX = maxX - minX || 1;
+    const rangeY = maxY - minY || 1;
+
+    // Mapear coordenadas reais → canvas
+    const positions = {};
+    for (const [id, node] of Object.entries(GRAPH)) {
+        positions[id] = {
+            x: PAD + ((node.x - minX) / rangeX) * (cw - 2 * PAD),
+            y: PAD + ((node.y - minY) / rangeY) * (ch - 2 * PAD)
+        };
+    }
 
     const routeSet = new Set(packet.rota.map(n => n.id));
     const routeEdges = new Set();
@@ -240,19 +258,8 @@ export function initRedeCanvas(packet) {
         routeEdges.add(packet.rota[i + 1].id + '|' + packet.rota[i].id);
     }
 
-    // Mapear coordenadas do grafo → canvas
-    const padX = 80, padY = 70;
-    const maxGx = 5, maxGy = 4;
-    const positions = {};
-    for (const [id, node] of Object.entries(GRAPH)) {
-        positions[id] = {
-            x: padX + (node.x / maxGx) * (cw - 2 * padX),
-            y: padY + (node.y / maxGy) * (ch - 2 * padY)
-        };
-    }
-
     // Estado da animação
-    const SPEED = 0.008;
+    const SPEED = 0.006;
     const PAUSE_FRAMES = 30;
     const DELIVERY_FRAMES = 60;
     let segIdx = 0, progress = 0, pauseTimer = 0, deliveryTimer = 0;
@@ -270,55 +277,51 @@ export function initRedeCanvas(packet) {
         for (let gx = 0; gx < cw; gx += 40) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, ch); ctx.stroke(); }
         for (let gy = 0; gy < ch; gy += 40) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(cw, gy); ctx.stroke(); }
 
-        // Desenhar arestas
-        for (const [id, node] of Object.entries(GRAPH)) {
-            for (const nb of node.neighbors) {
-                if (id < nb) { // evitar duplicata
-                    const from = positions[id], to = positions[nb];
-                    const isRoute = routeEdges.has(id + '|' + nb);
-                    ctx.beginPath(); ctx.moveTo(from.x, from.y); ctx.lineTo(to.x, to.y);
-                    if (isRoute) {
-                        ctx.strokeStyle = 'rgba(0,180,255,0.5)'; ctx.lineWidth = 2.5;
-                        ctx.setLineDash([]);
-                        ctx.save(); ctx.shadowColor = 'rgba(0,180,255,0.3)'; ctx.shadowBlur = 8; ctx.stroke(); ctx.restore();
-                    } else {
-                        ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 1;
-                        ctx.setLineDash([4, 6]);
-                    }
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                }
-            }
+        // Desenhar apenas arestas da rota
+        for (let i = 0; i < packet.rota.length - 1; i++) {
+            const fromPos = positions[packet.rota[i].id];
+            const toPos = positions[packet.rota[i + 1].id];
+            ctx.beginPath(); ctx.moveTo(fromPos.x, fromPos.y); ctx.lineTo(toPos.x, toPos.y);
+            ctx.strokeStyle = 'rgba(0,180,255,0.5)'; ctx.lineWidth = 2.5;
+            ctx.setLineDash([]);
+            ctx.save(); ctx.shadowColor = 'rgba(0,180,255,0.3)'; ctx.shadowBlur = 8; ctx.stroke(); ctx.restore();
         }
 
-        // Desenhar nós
-        const nodeSize = 28;
+        // Desenhar todos os 100 nós
+        const NODE_SIZE_ROUTE = 22;
+        const NODE_SIZE_DEFAULT = 14;
+
         for (const [id, node] of Object.entries(GRAPH)) {
             const pos = positions[id];
             const inRoute = routeSet.has(id);
+            const isInactive = !node.ativo;
             const flash = nodeFlash[id] || 0;
             const scale = 1 + flash * 0.2;
+            const isOrigin = id === packet.origemId;
+            const isDest = id === packet.destinoId;
 
             ctx.save();
             ctx.translate(pos.x, pos.y);
             ctx.scale(scale, scale);
             ctx.translate(-pos.x, -pos.y);
 
-            if (node.type === 'client') {
-                drawClientIcon(ctx, pos.x, pos.y, nodeSize, '#00e090');
-            } else if (node.type === 'server') {
-                drawServerIcon(ctx, pos.x, pos.y, nodeSize, '#ff6b6b');
+            if (inRoute) {
+                // Nós da rota: ícone maior, azul (origem=verde, destino=vermelho)
+                const color = isOrigin ? '#00e090' : isDest ? '#ff6b6b' : '#00b4ff';
+                drawRouterIcon(ctx, pos.x, pos.y, NODE_SIZE_ROUTE, color, false);
+                // Label apenas para nós da rota
+                const lblColor = isOrigin ? '#00e090' : isDest ? '#ff6b6b' : '#88ddff';
+                drawLabel(ctx, pos.x, pos.y, NODE_SIZE_ROUTE, node.label, node.ip, lblColor);
+            } else if (isInactive) {
+                // Inativos: ícone cinza pequeno + X vermelho
+                drawRouterIcon(ctx, pos.x, pos.y, NODE_SIZE_DEFAULT, 'rgba(120,120,140,0.5)', true);
             } else {
-                const col = inRoute ? '#00b4ff' : 'rgba(120,120,140,0.5)';
-                drawRouterIcon(ctx, pos.x, pos.y, nodeSize, col, !inRoute);
+                // Ativos fora da rota: ícone cinza pequeno (sem X)
+                drawRouterIcon(ctx, pos.x, pos.y, NODE_SIZE_DEFAULT, 'rgba(120,120,140,0.4)', false);
             }
-
-            const lblCol = node.type === 'client' ? '#00e090' : node.type === 'server' ? '#ff6b6b' : inRoute ? '#88ddff' : 'rgba(150,150,160,0.5)';
-            drawLabel(ctx, pos.x, pos.y, nodeSize, node.label, node.ip, lblCol);
 
             ctx.restore();
 
-            // Decair flash
             if (nodeFlash[id] > 0) nodeFlash[id] = Math.max(0, nodeFlash[id] - 0.03);
         }
 
@@ -378,8 +381,8 @@ export function initRedeCanvas(packet) {
 }
 
 // ── Renderizar HTML da camada ──
-export function renderRede(hostIP) {
-    const packet = buildNetworkPacket(hostIP);
+export function renderRede() {
+    const packet = buildNetworkPacket();
 
     const routeRows = packet.rota.map((n, i) => {
         const isFirst = i === 0, isLast = i === packet.rota.length - 1;
@@ -391,6 +394,10 @@ export function renderRede(hostIP) {
             <span class="route-table-name">${n.label}</span>
         </div>`;
     }).join('');
+
+    const noRouteMsg = !packet.rotaEncontrada
+        ? `<div class="net-no-route">⚠ Rota não encontrada — tente nova requisição</div>`
+        : '';
 
     const html = `
         <div class="osi-layer layer-3">
@@ -417,9 +424,10 @@ export function renderRede(hostIP) {
                     </div>
                     <div class="net-info-item">
                         <span class="net-info-label">Hops</span>
-                        <span class="net-info-value net-hops">${packet.rota.length - 1}</span>
+                        <span class="net-info-value net-hops">${packet.rotaEncontrada ? packet.rota.length - 1 : '—'}</span>
                     </div>
                 </div>
+                ${noRouteMsg}
                 <div class="network-canvas-container">
                     <span class="net-anim-title">📡 Simulação da Rota do Pacote</span>
                     <div class="network-canvas-wrapper">
