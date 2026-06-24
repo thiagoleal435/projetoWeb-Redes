@@ -4,9 +4,18 @@
 // =============================================
 
 function generatePacketId() {
-    const arr = new Uint8Array(4);
-    crypto.getRandomValues(arr);
-    return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const arr = new Uint8Array(4);
+        crypto.getRandomValues(arr);
+        return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+    } else {
+        let result = '';
+        for (let i = 0; i < 4; i++) {
+            const val = Math.floor(Math.random() * 256);
+            result += val.toString(16).padStart(2, '0');
+        }
+        return result;
+    }
 }
 
 function getDestinationPort(appProtocol) {
