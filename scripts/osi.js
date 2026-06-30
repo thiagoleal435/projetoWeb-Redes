@@ -1,6 +1,6 @@
 // =============================================
 // Orquestrador OSI
-// Coordena a renderização sequencial das camadas 7 → 6 → 5 → 4 → 3
+// Coordena a renderização sequencial das camadas 7 → 6 → 5 → 4 → 3 → 2 → 1
 // =============================================
 
 import { renderAplicacao, renderAplicacaoHTTP } from './aplicacao.js';
@@ -8,9 +8,11 @@ import { renderApresentacao } from './apresentacao.js';
 import { renderSessao, getSessionId } from './sessao.js';
 import { renderTransporte } from './transporte.js';
 import { renderRede, initRedeCanvas, stopRedeAnimation } from './rede.js';
+import { renderEnlace } from './enlace.js';
+import { renderFisica, initFisicaCanvas } from './fisica.js';
 
 /**
- * Renderiza as 5 camadas OSI no container, com setas de conexão.
+ * Renderiza as 7 camadas OSI no container, com setas de conexão.
  * @param {Object} data - Dados da requisição (SMTP ou HTTP).
  * @param {'smtp'|'http'} tipo - Tipo de requisição.
  */
@@ -45,6 +47,12 @@ export function renderOSILayers(data, tipo = 'smtp') {
     // Camada 3 — Rede (sorteia origem/destino automaticamente)
     const { html: redeHTML, networkPacket } = renderRede();
 
+    // Camada 2 — Enlace de Dados
+    const { html: enlaceHTML, frameData } = renderEnlace(networkPacket, appProtocol);
+
+    // Camada 1 — Física
+    const { html: fisicaHTML } = renderFisica(frameData);
+
     // Seta visual entre camadas
     const arrowHTML = `
         <div class="osi-arrow">
@@ -64,6 +72,10 @@ export function renderOSILayers(data, tipo = 'smtp') {
         ${transporteHTML}
         ${arrowHTML}
         ${redeHTML}
+        ${arrowHTML}
+        ${enlaceHTML}
+        ${arrowHTML}
+        ${fisicaHTML}
         <button class="osi-reset-btn" id="osi-reset-btn">Nova Requisição</button>
     `;
 
@@ -71,6 +83,9 @@ export function renderOSILayers(data, tipo = 'smtp') {
 
     // Iniciar canvas da camada de rede APÓS inserção no DOM
     initRedeCanvas(networkPacket);
+
+    // Iniciar canvas da camada física APÓS inserção no DOM
+    initFisicaCanvas(frameData);
 
     // Botão de reset
     document.getElementById('osi-reset-btn').addEventListener('click', () => {
